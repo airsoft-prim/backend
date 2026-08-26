@@ -38,12 +38,15 @@ class DatedBaseModel(BaseModel):
     )
 
 
-from .profile import UserProfile  # noqa: E402
-from .public import User  # noqa: E402
+from .profile import TeamProfile, UserProfile  # noqa: E402
+from .public import Team, TeamMember, User  # noqa: E402
 
 __all__ = [
     "NAMING_CONVENTION",
     "BaseModel",
+    "Team",
+    "TeamMember",
+    "TeamProfile",
     "User",
     "UserProfile",
 ]
