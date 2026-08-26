@@ -5,7 +5,7 @@
   // Сначала ищем конфиг на диске (ruff.toml), editor-настройки — только если файла нет
   "ruff.configurationPreference": "filesystemFirst",
   // ruff не установлен в .venv — используем версию, встроенную в расширение
-  "ruff.importStrategy": "useBundled",
+  "ruff.importStrategy": "fromEnvironment",
   // Нативный LSP-сервер (рекомендован), "auto" берёт его по умолчанию
   "ruff.nativeServer": "auto",
 
