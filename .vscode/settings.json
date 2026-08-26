@@ -1,0 +1,29 @@
+{
+  // === Ruff (charliermarsh.ruff) ===
+  // Явно указываем конфиг-файл проекта, а не pyproject.toml
+  "ruff.configuration": "${workspaceFolder}/ruff.toml",
+  // Сначала ищем конфиг на диске (ruff.toml), editor-настройки — только если файла нет
+  "ruff.configurationPreference": "filesystemFirst",
+  // ruff не установлен в .venv — используем версию, встроенную в расширение
+  "ruff.importStrategy": "useBundled",
+  // Нативный LSP-сервер (рекомендован), "auto" берёт его по умолчанию
+  "ruff.nativeServer": "auto",
+
+  // === Ty — тип-чекер (astral-sh.ty) ===
+  // Явно указываем конфиг-файл ty.toml
+  "ty.configurationFile": "${workspaceFolder}/ty.toml",
+  // ty не установлен в .venv — используем встроенную версию расширения
+  "ty.importStrategy": "useBundled",
+  // Проверять весь workspace, а не только открытые файлы
+  "ty.diagnosticMode": "workspace",
+
+  // === Python / pytest (ms-python.python) ===
+  // Интерпретатор из venv проекта (pytest установлен именно туда)
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  // Включаем pytest-тестирование; корень workspace — чтобы pytest нашёл pytest.ini
+  "python.testing.pytestEnabled": true,
+  "python.testing.cwd": "${workspaceFolder}",
+  // Без дополнительных аргументов: pytest сам читает pytest.ini
+  // (testpaths = tests, asyncio_mode = auto и т.д.)
+  "python.testing.pytestArgs": []
+}
