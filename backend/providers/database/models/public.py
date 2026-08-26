@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
     Identity,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -84,6 +86,7 @@ class UnionMember(DatedBaseModel):
     __table_args__ = (
         UniqueConstraint("union_id", "user_id", name="uq_union_members_union_id_user_id"),
         UniqueConstraint("union_id", "callsign", name="uq_union_members_union_id_callsign"),
+        Index(None, "user_id", postgresql_using="hash"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -120,6 +123,13 @@ class Game(DatedBaseModel):
     """Игра (мероприятие) страйкбольного портала."""
 
     __tablename__ = "games"
+    __table_args__ = (
+        CheckConstraint("end_at > start_at", name="end_after_start"),
+        CheckConstraint("check_in_at <= start_at", name="checkin_before_start"),
+        CheckConstraint("entry_fee >= 0", name="entry_fee_non_negative"),
+        CheckConstraint("max_players IS NULL OR max_players > 0", name="max_players_positive"),
+        Index(None, "organizer_id", postgresql_using="hash"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     title: Mapped[str] = mapped_column(String(200))
@@ -160,6 +170,10 @@ class GameRegistration(DatedBaseModel):
     """
 
     __tablename__ = "game_registrations"
+    __table_args__ = (
+        Index(None, "game_id", postgresql_using="hash"),
+        Index(None, "member_id", postgresql_using="hash"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     game_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("games.id", ondelete="CASCADE"))
