@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    DateTime,
     Enum,
     ForeignKey,
     Identity,
+    Integer,
     String,
     UniqueConstraint,
     true,
@@ -17,10 +20,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.general.enums import TeamMemberRank
 from backend.general.utils import enum_values
 
-from . import BaseModel, DatedBaseModel
+from . import DatedBaseModel
 
 if TYPE_CHECKING:
-    from .profile import TeamProfile, UserProfile
+    from .info import GameProfile, TeamProfile, UserProfile
 
 
 class User(DatedBaseModel):
@@ -63,7 +66,7 @@ class Team(DatedBaseModel):
     )
 
 
-class TeamMember(BaseModel):
+class TeamMember(DatedBaseModel):
     """Участник команды.
 
     Запись может быть «виртуальным бойцом» — без привязки к учётной записи
@@ -80,12 +83,12 @@ class TeamMember(BaseModel):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     team_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("teams.id", ondelete="CASCADE"))
     callsign: Mapped[str] = mapped_column(String(50))
+    tag: Mapped[str | None] = mapped_column(String(50))
     rank: Mapped[TeamMemberRank] = mapped_column(
         Enum(TeamMemberRank, name="team_member_rank", values_callable=enum_values),
         default=TeamMemberRank.MEMBER,
         server_default=TeamMemberRank.MEMBER.value,
     )
-    tag: Mapped[str | None] = mapped_column(String(50))
     user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="SET NULL")
     )
@@ -101,3 +104,28 @@ class TeamMember(BaseModel):
         неподтверждённым, пока не свяжет свой аккаунт.
         """
         return self.user is not None
+
+
+class Game(DatedBaseModel):
+    """Игра (мероприятие) страйкбольного портала."""
+
+    __tablename__ = "games"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+
+    max_players: Mapped[int | None] = mapped_column(Integer)
+    entry_fee: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+    location_name: Mapped[str] = mapped_column(String(200))
+    location_url: Mapped[str | None] = mapped_column(String(500))
+
+    check_in_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    profile: Mapped[GameProfile | None] = relationship(
+        back_populates="game",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
