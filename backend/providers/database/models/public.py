@@ -19,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.general.enums import UnionMemberRank, UnionType
+from backend.general.enums import GameStatus, UnionMemberRank, UnionType
 from backend.general.utils import enum_values
 
 from . import DatedBaseModel
@@ -133,6 +133,11 @@ class Game(DatedBaseModel):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     title: Mapped[str] = mapped_column(String(200))
+    status: Mapped[GameStatus] = mapped_column(
+        Enum(GameStatus, name="game_status", values_callable=enum_values),
+        default=GameStatus.DRAFT,
+        server_default=GameStatus.DRAFT.value,
+    )
 
     max_players: Mapped[int | None] = mapped_column(Integer)
     entry_fee: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

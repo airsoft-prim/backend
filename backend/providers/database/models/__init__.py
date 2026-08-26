@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Единый naming convention: Alembic генерирует миграции,
@@ -14,8 +15,12 @@ NAMING_CONVENTION = {
 }
 
 
-class BaseModel(DeclarativeBase):
-    """Базовый класс всех ORM-моделей."""
+class BaseModel(AsyncAttrs, DeclarativeBase):
+    """Базовый класс всех ORM-моделей.
+
+    AsyncAttrs даёт awaitable_attrs: ленивая загрузка отношений
+    в асинхронном коде через `await obj.awaitable_attrs.<relation>`.
+    """
 
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 

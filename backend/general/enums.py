@@ -21,3 +21,12 @@ class UnionType(StrEnum):
 
     TEAM = "team"
     ORG_COMMITTEE = "org_committee"
+
+
+class GameStatus(StrEnum):
+    """Статус игры: черновик, регистрация, проведение, завершена."""
+
+    DRAFT = "draft"
+    REGISTRATION = "registration"
+    ONGOING = "ongoing"
+    COMPLETED = "completed"
