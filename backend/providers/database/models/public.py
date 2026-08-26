@@ -101,6 +101,10 @@ class UnionMember(DatedBaseModel):
 
     union: Mapped[Union] = relationship(back_populates="members")
     user: Mapped[User | None] = relationship(back_populates="memberships")
+    registrations: Mapped[list[GameRegistration]] = relationship(
+        back_populates="member",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def is_confirmed(self) -> bool:
@@ -119,9 +123,6 @@ class Game(DatedBaseModel):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     title: Mapped[str] = mapped_column(String(200))
-    organizer_union_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("unions.id", ondelete="RESTRICT")
-    )
 
     max_players: Mapped[int | None] = mapped_column(Integer)
     entry_fee: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
@@ -133,9 +134,38 @@ class Game(DatedBaseModel):
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
+    organizer_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("unions.id", ondelete="RESTRICT")
+    )
+
     profile: Mapped[GameProfile | None] = relationship(
         back_populates="game",
         uselist=False,
         cascade="all, delete-orphan",
     )
     organizer: Mapped[Union] = relationship(back_populates="organized_games")
+    registrations: Mapped[list[GameRegistration]] = relationship(
+        back_populates="game",
+        cascade="all, delete-orphan",
+    )
+
+
+class GameRegistration(DatedBaseModel):
+    """Регистрация участника объединения на игру.
+
+    Регистрация ссылается на участника объединения (UnionMember), а не на
+    учётную запись: команда может записать на игру и «виртуального» бойца
+    без регистрации на портале. Ограничения бизнес-процесса (кто и как
+    регистрируется) — уровень сервисного слоя, не БД.
+    """
+
+    __tablename__ = "game_registrations"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    game_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("games.id", ondelete="CASCADE"))
+    member_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("union_members.id", ondelete="CASCADE")
+    )
+
+    game: Mapped[Game] = relationship(back_populates="registrations")
+    member: Mapped[UnionMember] = relationship(back_populates="registrations")
