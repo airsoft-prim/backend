@@ -8,9 +8,16 @@ class UserRole(StrEnum):
     ADMIN = "admin"
 
 
-class TeamMemberRank(StrEnum):
-    """Ранг участника команды."""
+class UnionMemberRank(StrEnum):
+    """Ранг участника объединения."""
 
     MEMBER = "member"
     DEPUTY_COMMANDER = "deputy_commander"
     COMMANDER = "commander"
+
+
+class UnionType(StrEnum):
+    """Тип объединения: команда или оргкомитет."""
+
+    TEAM = "team"
+    ORG_COMMITTEE = "org_committee"

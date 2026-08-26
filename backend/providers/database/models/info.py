@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from . import BaseModel
 
 if TYPE_CHECKING:
-    from .public import Game, Team, User
+    from .public import Game, Union, User
 
 
 class UserProfile(BaseModel):
@@ -27,24 +27,24 @@ class UserProfile(BaseModel):
     user: Mapped[User] = relationship(back_populates="profile")
 
 
-class TeamProfile(BaseModel):
-    """Профиль команды: публичные данные.
+class UnionProfile(BaseModel):
+    """Профиль объединения: публичные данные.
 
-    Создаётся вместе с командой и удаляется вместе с ней.
+    Создаётся вместе с объединением и удаляется вместе с ним.
     """
 
-    __tablename__ = "team_profiles"
+    __tablename__ = "union_profiles"
     __table_args__ = ({"schema": "info"},)
 
-    team_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
+    union_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("unions.id", ondelete="CASCADE"), primary_key=True
     )
     description: Mapped[str | None] = mapped_column(Text)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     banner_url: Mapped[str | None] = mapped_column(String(500))
     motto: Mapped[str | None] = mapped_column(String(255))
 
-    team: Mapped[Team] = relationship(back_populates="profile")
+    union: Mapped[Union] = relationship(back_populates="profile")
 
 
 class GameProfile(BaseModel):
