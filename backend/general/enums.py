@@ -30,3 +30,21 @@ class GameStatus(StrEnum):
     REGISTRATION = "registration"
     ONGOING = "ongoing"
     COMPLETED = "completed"
+
+
+class GameTag(StrEnum):
+    """Тег игры — формат или жанр: CQB, тренировка, воскреска, милсим,
+    ролевая игра, сценарная игра, штурм, оборона, захват флага,
+    ночная игра, зомби-апокалипсис."""
+
+    CQB = "cqb"
+    TRAINING = "training"
+    RESPAWN = "respawn"
+    MILSIM = "milsim"
+    ROLEPLAY = "roleplay"
+    SCENARIO = "scenario"
+    ASSAULT = "assault"
+    DEFENSE = "defense"
+    CAPTURE_THE_FLAG = "capture_the_flag"
+    NIGHT = "night"
+    ZOMBIE = "zombie"

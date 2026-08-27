@@ -17,9 +17,10 @@ from sqlalchemy import (
     UniqueConstraint,
     true,
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.general.enums import GameStatus, UnionMemberRank, UnionType
+from backend.general.enums import GameStatus, GameTag, UnionMemberRank, UnionType
 from backend.general.utils import enum_values
 
 from . import DatedBaseModel
@@ -137,6 +138,11 @@ class Game(DatedBaseModel):
         Enum(GameStatus, name="game_status", values_callable=enum_values),
         default=GameStatus.DRAFT,
         server_default=GameStatus.DRAFT.value,
+    )
+    tags: Mapped[list[GameTag]] = mapped_column(
+        ARRAY(Enum(GameTag, name="game_tag", values_callable=enum_values)),
+        default=list,
+        server_default="{}",
     )
 
     max_players: Mapped[int | None] = mapped_column(Integer)
