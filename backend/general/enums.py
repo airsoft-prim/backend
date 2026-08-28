@@ -6,6 +6,7 @@ class UserRole(StrEnum):
 
     PLAYER = "player"
     ADMIN = "admin"
+    MODERATOR = "moderator"
 
 
 class UnionMemberRank(StrEnum):
@@ -17,14 +18,14 @@ class UnionMemberRank(StrEnum):
 
 
 class UnionType(StrEnum):
-    """Тип объединения: команда или оргкомитет."""
+    """Тип объединения."""
 
     TEAM = "team"
     ORG_COMMITTEE = "org_committee"
 
 
 class GameStatus(StrEnum):
-    """Статус игры: черновик, регистрация, проведение, завершена."""
+    """Статус игры, означающий этап проведения."""
 
     DRAFT = "draft"
     REGISTRATION = "registration"
@@ -33,13 +34,11 @@ class GameStatus(StrEnum):
 
 
 class GameTag(StrEnum):
-    """Тег игры — формат или жанр: CQB, тренировка, воскреска, милсим,
-    ролевая игра, сценарная игра, штурм, оборона, захват флага,
-    ночная игра, зомби-апокалипсис."""
+    """Тег игры, означающий формат или жанр."""
 
     CQB = "cqb"
     TRAINING = "training"
-    RESPAWN = "respawn"
+    SUNDAY = "sunday"
     MILSIM = "milsim"
     ROLEPLAY = "roleplay"
     SCENARIO = "scenario"
@@ -48,3 +47,4 @@ class GameTag(StrEnum):
     CAPTURE_THE_FLAG = "capture_the_flag"
     NIGHT = "night"
     ZOMBIE = "zombie"
+    MULTIDAY = "multiday"
