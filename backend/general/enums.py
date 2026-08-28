@@ -1,6 +1,20 @@
 from enum import StrEnum
 
 
+class SortDirection(StrEnum):
+    """Направление сортировки."""
+
+    ASC = "asc"
+    DESC = "desc"
+
+
+class FilterOperator(StrEnum):
+    """Оператор для фильтрации по полю."""
+
+    EQUAL = "eq"
+    # TODO: Добавить ещё операторов
+
+
 class UserRole(StrEnum):
     """Роль пользователя на портале."""
 
