@@ -43,8 +43,9 @@ class DatedBaseModel(BaseModel):
     )
 
 
+from .auth import Role, User  # noqa: E402
 from .info import GameProfile, UnionProfile, UserProfile  # noqa: E402
-from .public import Game, GameRegistration, Union, UnionMember, User  # noqa: E402
+from .public import Game, GameRegistration, Union, UnionMember  # noqa: E402
 
 __all__ = [
     "NAMING_CONVENTION",
@@ -52,6 +53,7 @@ __all__ = [
     "Game",
     "GameProfile",
     "GameRegistration",
+    "Role",
     "Union",
     "UnionMember",
     "UnionProfile",

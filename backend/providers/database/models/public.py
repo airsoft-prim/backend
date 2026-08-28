@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
-    Boolean,
     CheckConstraint,
     DateTime,
     Enum,
@@ -15,7 +14,6 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
-    true,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -26,28 +24,8 @@ from backend.general.utils import enum_values
 from . import DatedBaseModel
 
 if TYPE_CHECKING:
-    from .info import GameProfile, UnionProfile, UserProfile
-
-
-class User(DatedBaseModel):
-    """Игрок, зарегистрированный на портале."""
-
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    callsign: Mapped[str] = mapped_column(String(50), unique=True)
-
-    username: Mapped[str] = mapped_column(String(50), unique=True)
-    password: Mapped[str] = mapped_column(String(255))
-
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
-
-    profile: Mapped[UserProfile] = relationship(
-        back_populates="user",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
-    memberships: Mapped[list[UnionMember]] = relationship(back_populates="user")
+    from .auth import User
+    from .info import GameProfile, UnionProfile
 
 
 class Union(DatedBaseModel):
@@ -76,8 +54,9 @@ class Union(DatedBaseModel):
 
 
 class UnionMember(DatedBaseModel):
-    """Участник объединения.
+    """Отображение учётной записи игрока (User) на страйкбольный домен.
 
+    Связывает игрока со страйкбольными сущностями — объединениями и играми.
     Запись может быть «виртуальным бойцом» — без привязки к учётной записи
     (user_id = NULL): командир вписывает бойца без регистрации на портале.
     Такой участник считается неподтверждённым, но вполне считается за живого.
@@ -100,7 +79,7 @@ class UnionMember(DatedBaseModel):
         server_default=UnionMemberRank.MEMBER.value,
     )
     user_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+        BigInteger, ForeignKey("auth.users.id", ondelete="SET NULL")
     )
 
     union: Mapped[Union] = relationship(back_populates="members")

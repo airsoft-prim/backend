@@ -8,7 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from . import BaseModel
 
 if TYPE_CHECKING:
-    from .public import Game, Union, User
+    from .auth import User
+    from .public import Game, Union
 
 
 class UserProfile(BaseModel):
@@ -18,7 +19,7 @@ class UserProfile(BaseModel):
     __table_args__ = ({"schema": "info"},)
 
     user_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        BigInteger, ForeignKey("auth.users.id", ondelete="CASCADE"), primary_key=True
     )
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     full_name: Mapped[str | None] = mapped_column(String(255))

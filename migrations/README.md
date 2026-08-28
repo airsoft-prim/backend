@@ -13,19 +13,13 @@ URI берётся из переменной окружения `ALEMBIC_URI` (�
 ALEMBIC_URI="postgresql+asyncpg://user:pass@host:5432/db" alembic upgrade head
 ```
 
-> **Важно:** Alembic создаёт таблицы, но не схемы. Первая миграция должна
-> содержать `op.execute("CREATE SCHEMA IF NOT EXISTS info")` — иначе применение
-> упадёт на таблицах схемы `info`.
-
 ## Схемы
 
 | Схема | Назначение | Таблицы |
 |---|---|---|
-| `public` | Сущности | `users`, `unions`, `union_members`, `games`, `game_registrations` |
+| `public` | Сущности | `unions`, `union_members`, `games`, `game_registrations` |
+| `auth` | Аутентификация и роли | `users`, `roles`, `users_roles` |
 | `info` | Мета-информация сущностей (профили) | `user_profiles`, `union_profiles`, `game_profiles` |
-
-Профили вынесены в отдельную схему и отдельные таблицы (1:1 с сущностью), чтобы
-сущностные таблицы не раздувались опциональными публичными данными.
 
 ## ER-диаграмма
 
@@ -33,6 +27,7 @@ ALEMBIC_URI="postgresql+asyncpg://user:pass@host:5432/db" alembic upgrade head
 erDiagram
     USER ||--|| USER_PROFILE : profile
     USER ||--o{ UNION_MEMBER : memberships
+    USER }o--o{ ROLE : roles
     UNION ||--|| UNION_PROFILE : profile
     UNION ||--o{ UNION_MEMBER : members
     UNION ||--o{ GAME : organized_games
@@ -47,6 +42,7 @@ erDiagram
 |---|---|---|---|
 | User | UserProfile | 1 — 0..1 | CASCADE |
 | User | UnionMember | 1 — 0..N | — |
+| User | Role | M — M | CASCADE (через `users_roles`) |
 | Union | UnionProfile | 1 — 0..1 | CASCADE |
 | Union | UnionMember | 1 — 0..N | CASCADE |
 | Union | Game | 1 — 0..N | RESTRICT |
@@ -61,7 +57,7 @@ erDiagram
 (`created_at`, `updated_at`) — `TIMESTAMPTZ`, `DEFAULT now()`, обновление на
 UPDATE — только у таблиц-сущностей (`DatedBaseModel`); у профилей меток нет.
 
-### `public.users`
+### `auth.users`
 
 | Колонка | Тип | Ограничения |
 |---|---|---|
@@ -71,6 +67,22 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 | `password` | VARCHAR(255) | NOT NULL (хэш) |
 | `is_active` | BOOLEAN | NOT NULL, DEFAULT `true` |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT `now()` |
+
+### `auth.roles`
+
+| Колонка | Тип | Ограничения |
+|---|---|---|
+| `id` | BIGINT identity | PK |
+| `name` | enum `user_role` | NOT NULL, UNIQUE |
+
+### `auth.users_roles`
+
+Прокси-таблица связи `users` и `roles` (M — M), объявлена как `secondary`.
+
+| Колонка | Тип | Ограничения |
+|---|---|---|
+| `user_id` | BIGINT | PK, FK → `auth.users.id` ON DELETE CASCADE |
+| `role_id` | BIGINT | PK, FK → `auth.roles.id` ON DELETE CASCADE |
 
 ### `public.unions`
 
@@ -90,7 +102,7 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 | `callsign` | VARCHAR(50) | NOT NULL |
 | `tag` | VARCHAR(50) | NULL |
 | `rank` | enum `union_member_rank` | NOT NULL, DEFAULT `'member'` |
-| `user_id` | BIGINT | NULL, FK → `users.id` ON DELETE SET NULL |
+| `user_id` | BIGINT | NULL, FK → `auth.users.id` ON DELETE SET NULL |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT `now()` |
 
 Ограничения: `UNIQUE (union_id, user_id)`, `UNIQUE (union_id, callsign)`,
@@ -127,8 +139,7 @@ hash-индекс на `organizer_id`.
 | `member_id` | BIGINT | NOT NULL, FK → `union_members.id` ON DELETE CASCADE |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT `now()` |
 
-hash-индексы на `game_id`, `member_id`. Коллизии (дубликаты) намеренно не
-ограничены — решается на уровне бизнес-логики.
+hash-индексы на `game_id`, `member_id`.
 
 ### `info.user_profiles`, `info.union_profiles`, `info.game_profiles`
 
@@ -144,33 +155,18 @@ hash-индексы на `game_id`, `member_id`. Коллизии (дублик�
 
 | Тип | Значения |
 |---|---|
-| `user_role` | `player`, `admin` |
+| `user_role` | `player`, `admin`, `moderator` |
 | `union_member_rank` | `member`, `deputy_commander`, `commander` |
 | `union_type` | `team`, `org_committee` |
 | `game_status` | `draft`, `registration`, `ongoing`, `completed` |
-| `game_tag` | `cqb`, `training`, `respawn`, `milsim`, `roleplay`, `scenario`, `assault`, `defense`, `capture_the_flag`, `night`, `zombie` |
+| `game_tag` | `cqb`, `training`, `sunday`, `milsim`, `roleplay`, `scenario`, `assault`, `defense`, `capture_the_flag`, `night`, `zombie`, `multiday` |
 
 ## Индексы и целостность
 
 - **hash-индексы** на FK-колонках (`games.organizer_id`,
-  `union_members.user_id`, `game_registrations.game_id/member_id`): поиск по ним
-  всегда равенство, btree-возможности не нужны, hash компактнее;
+  `union_members.user_id`, `game_registrations.game_id/member_id`);
 - **Check-констрейнты** защищают согласованность дат, взноса и лимита;
-- **unique** — PK, `users.callsign`, `users.username`, `unions.name`,
+- **unique** — PK, `users.callsign`, `users.username`, `roles.name`, `unions.name`,
   `(union_id, user_id)`, `(union_id, callsign)`;
 - имена констрейнтов/индексов генерирует единый naming convention
   (`ix_`, `uq_`, `ck_`, `fk_`, `pk_`).
-
-## Технические решения
-
-- **Деньги — целые копейки** (`INTEGER`): нет ошибок округления float;
-  форматирование в рубли — на уровне API.
-- **Нативные PG enum** для всех перечислений (строгая валидация в СУБД);
-  смена значений — через `ALTER TYPE` в миграциях.
-- **Каскады**: профили и регистрации — `CASCADE`; аккаунт удалён —
-  участник становится виртуальным (`SET NULL`); объединение с играми удалить
-  нельзя (`RESTRICT`).
-- **`include_schemas=True`** в `migrations/env.py` — без него autogenerate не
-  видит таблицы схемы `info`.
-- Модели подключаются через `BaseModel.metadata`; `AsyncAttrs` в `BaseModel`
-  даёт `await obj.awaitable_attrs.<relation>` для async-ленивой загрузки.
