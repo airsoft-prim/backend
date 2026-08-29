@@ -35,7 +35,7 @@ class UnionType(StrEnum):
     """Тип объединения."""
 
     TEAM = "team"
-    ORG_COMMITTEE = "org_committee"
+    COMMITTEE = "committee"
 
 
 class GameStatus(StrEnum):
