@@ -1,8 +1,10 @@
 from collections.abc import Awaitable, Callable
 from enum import Enum
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from fastapi import Request, Response
+
+from .enums import FilterOperator, SortDirection
 
 type CallNext = Callable[[Request], Awaitable[Response]]
 
@@ -17,3 +19,18 @@ class RouteDocs(TypedDict, total=False):
     deprecated: bool
     tags: list[str | Enum]
     response_description: str
+
+
+class FilterMapping(TypedDict, total=True):
+    """_summary_"""
+
+    field: str
+    value: Any
+    operator: FilterOperator
+
+
+class SortMapping(TypedDict, total=True):
+    """_summary_"""
+
+    field: str
+    direction: SortDirection

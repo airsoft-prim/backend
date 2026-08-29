@@ -3,9 +3,10 @@ from enum import StrEnum
 import math
 from typing import Any
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_serializer
 
 from .enums import FilterOperator, SortDirection
+from .types import FilterMapping, SortMapping
 
 
 class PageOf[D: BaseModel](BaseModel):
@@ -40,12 +41,30 @@ class Filter[F: StrEnum](BaseModel):
     value: Any
     operator: FilterOperator
 
+    @field_serializer("field", when_used="always")
+    def field_as_str(self, field: F) -> str:
+        """_summary_"""
+        return field.value
+
+    def to_mapping(self) -> FilterMapping:
+        """_summary_"""
+        return FilterMapping(self.model_dump())
+
 
 class Sort[S: StrEnum](BaseModel):
     """Сортировка по заданным полям."""
 
     field: S
     direction: SortDirection = Field(default=SortDirection.ASC)
+
+    @field_serializer("field", when_used="always")
+    def field_as_str(self, field: S) -> str:
+        """_summary_"""
+        return field.value
+
+    def to_mapping(self) -> SortMapping:
+        """_summary_"""
+        return SortMapping(self.model_dump())
 
 
 class SearchBody[F: StrEnum, S: StrEnum](BaseModel):
