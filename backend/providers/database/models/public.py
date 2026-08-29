@@ -18,7 +18,14 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.general.enums import GameStatus, GameTag, UnionMemberRank, UnionType
+from backend.general.enums import (
+    GameStatus,
+    GameTag,
+    UnionMemberRank,
+    UnionRecruitmentStatus,
+    UnionStatus,
+    UnionType,
+)
 from backend.general.utils import enum_values
 
 from . import DatedBaseModel
@@ -39,6 +46,16 @@ class Union(DatedBaseModel):
         Enum(UnionType, name="union_type", values_callable=enum_values),
         default=UnionType.TEAM,
         server_default=UnionType.TEAM.value,
+    )
+    recruitment_status: Mapped[UnionRecruitmentStatus] = mapped_column(
+        Enum(UnionRecruitmentStatus, name="union_recruitment_status", values_callable=enum_values),
+        default=UnionRecruitmentStatus.OPEN,
+        server_default=UnionRecruitmentStatus.OPEN.value,
+    )
+    status: Mapped[UnionStatus] = mapped_column(
+        Enum(UnionStatus, name="union_status", values_callable=enum_values),
+        default=UnionStatus.ANNOUNCED,
+        server_default=UnionStatus.ANNOUNCED.value,
     )
 
     profile: Mapped[UnionProfile] = relationship(

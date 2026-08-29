@@ -16,7 +16,7 @@ ALEMBIC_URI="postgresql+asyncpg://user:pass@host:5432/db" alembic upgrade head
 ## Схемы
 
 | Схема | Назначение | Таблицы |
-|---|---|---|
+| --- | --- | --- |
 | `public` | Сущности | `unions`, `union_members`, `games`, `game_registrations` |
 | `auth` | Аутентификация и роли | `users`, `roles`, `users_roles` |
 | `info` | Мета-информация сущностей (профили) | `user_profiles`, `union_profiles`, `game_profiles` |
@@ -39,7 +39,7 @@ erDiagram
 ```
 
 | От | К | Тип | Каскад при удалении |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | User | UserProfile | 1 — 0..1 | CASCADE |
 | User | UnionMember | 1 — 0..N | — |
 | User | Role | M — M | CASCADE (через `users_roles`) |
@@ -60,7 +60,7 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 ### `auth.users`
 
 | Колонка | Тип | Ограничения |
-|---|---|---|
+| --- | --- | --- |
 | `id` | BIGINT identity | PK |
 | `callsign` | VARCHAR(50) | NOT NULL, UNIQUE |
 | `username` | VARCHAR(50) | NOT NULL, UNIQUE |
@@ -71,7 +71,7 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 ### `auth.roles`
 
 | Колонка | Тип | Ограничения |
-|---|---|---|
+| --- | --- | --- |
 | `id` | BIGINT identity | PK |
 | `name` | enum `user_role` | NOT NULL, UNIQUE |
 
@@ -80,23 +80,25 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 Прокси-таблица связи `users` и `roles` (M — M), объявлена как `secondary`.
 
 | Колонка | Тип | Ограничения |
-|---|---|---|
+| --- | --- | --- |
 | `user_id` | BIGINT | PK, FK → `auth.users.id` ON DELETE CASCADE |
 | `role_id` | BIGINT | PK, FK → `auth.roles.id` ON DELETE CASCADE |
 
 ### `public.unions`
 
 | Колонка | Тип | Ограничения |
-|---|---|---|
+| --- | --- | --- |
 | `id` | BIGINT identity | PK |
 | `name` | VARCHAR(100) | NOT NULL, UNIQUE |
 | `type` | enum `union_type` | NOT NULL, DEFAULT `'team'` |
+| `recruitment_status` | enum `union_recruitment_status` | NOT NULL, DEFAULT `'open'` |
+| `status` | enum `union_status` | NOT NULL, DEFAULT `'announced'` |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT `now()` |
 
 ### `public.union_members`
 
 | Колонка | Тип | Ограничения |
-|---|---|---|
+| --- | --- | --- |
 | `id` | BIGINT identity | PK |
 | `union_id` | BIGINT | NOT NULL, FK → `unions.id` ON DELETE CASCADE |
 | `callsign` | VARCHAR(50) | NOT NULL |
@@ -111,7 +113,7 @@ hash-индекс на `user_id`.
 ### `public.games`
 
 | Колонка | Тип | Ограничения |
-|---|---|---|
+| --- | --- | --- |
 | `id` | BIGINT identity | PK |
 | `title` | VARCHAR(200) | NOT NULL |
 | `status` | enum `game_status` | NOT NULL, DEFAULT `'draft'` |
@@ -133,7 +135,7 @@ hash-индекс на `organizer_id`.
 ### `public.game_registrations`
 
 | Колонка | Тип | Ограничения |
-|---|---|---|
+| --- | --- | --- |
 | `id` | BIGINT identity | PK |
 | `game_id` | BIGINT | NOT NULL, FK → `games.id` ON DELETE CASCADE |
 | `member_id` | BIGINT | NOT NULL, FK → `union_members.id` ON DELETE CASCADE |
@@ -146,7 +148,7 @@ hash-индексы на `game_id`, `member_id`.
 Общая структура: `*_id` — PK и FK → сущность (`ON DELETE CASCADE`).
 
 | Таблица | Колонки |
-|---|---|
+| --- | --- |
 | `user_profiles` | `avatar_url`, `full_name`, `bio` |
 | `union_profiles` | `description`, `avatar_url`, `banner_url`, `motto` |
 | `game_profiles` | `avatar_url`, `banner_url`, `description` |
@@ -154,10 +156,12 @@ hash-индексы на `game_id`, `member_id`.
 ## Перечисления (нативные PG enum)
 
 | Тип | Значения |
-|---|---|
+| --- | --- |
 | `user_role` | `player`, `admin`, `moderator` |
 | `union_member_rank` | `member`, `deputy_commander`, `commander` |
-| `union_type` | `team`, `org_committee` |
+| `union_type` | `team`, `committee` |
+| `union_recruitment_status` | `open`, `closed` |
+| `union_status` | `announced`, `confirmed` |
 | `game_status` | `draft`, `registration`, `ongoing`, `completed` |
 | `game_tag` | `cqb`, `training`, `sunday`, `milsim`, `roleplay`, `scenario`, `assault`, `defense`, `capture_the_flag`, `night`, `zombie`, `multiday` |
 

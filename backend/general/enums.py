@@ -38,6 +38,20 @@ class UnionType(StrEnum):
     COMMITTEE = "committee"
 
 
+class UnionRecruitmentStatus(StrEnum):
+    """Статус набора в объединение."""
+
+    OPEN = "open"
+    CLOSED = "closed"
+
+
+class UnionStatus(StrEnum):
+    """Статус объединения."""
+
+    ANNOUNCED = "announced"
+    CONFIRMED = "confirmed"
+
+
 class GameStatus(StrEnum):
     """Статус игры, означающий этап проведения."""
 
