@@ -91,6 +91,8 @@ class Union(DatedBaseModel):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
     city: Mapped[str] = mapped_column(String(100))
+    camo_color: Mapped[str | None] = mapped_column(String(50))
+    gear_color: Mapped[str | None] = mapped_column(String(50))
     type: Mapped[UnionType] = mapped_column(
         Enum(UnionType, name="union_type", values_callable=enum_values),
         default=UnionType.TEAM,

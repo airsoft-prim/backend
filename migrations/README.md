@@ -97,6 +97,8 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 | `id` | BIGINT identity | PK |
 | `name` | VARCHAR(100) | NOT NULL, UNIQUE |
 | `city` | VARCHAR(100) | NOT NULL |
+| `camo_color` | VARCHAR(50) | NULL |
+| `gear_color` | VARCHAR(50) | NULL |
 | `type` | enum `union_type` | NOT NULL, DEFAULT `'team'` |
 | `recruitment_status` | enum `union_recruitment_status` | NOT NULL, DEFAULT `'open'` |
 | `status` | enum `union_status` | NOT NULL, DEFAULT `'announced'` |
