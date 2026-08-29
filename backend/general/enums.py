@@ -1,4 +1,7 @@
+from collections.abc import Callable
 from enum import StrEnum
+import operator
+from typing import Any
 
 
 class SortDirection(StrEnum):
@@ -12,7 +15,23 @@ class FilterOperator(StrEnum):
     """Оператор для фильтрации по полю."""
 
     EQUAL = "eq"
-    # TODO: Добавить ещё операторов
+    NOT_EQUAL = "ne"
+    LESS_THAN = "lt"
+    LESS_OR_EQUAL = "le"
+    GREATER_THAN = "gt"
+    GREATER_OR_EQUAL = "ge"
+
+    @property
+    def python(self) -> Callable[[Any, Any], Any]:
+        """Возвращет соответствующий Python-оператор."""
+        return {
+            self.EQUAL: operator.eq,
+            self.NOT_EQUAL: operator.ne,
+            self.LESS_THAN: operator.lt,
+            self.LESS_OR_EQUAL: operator.le,
+            self.GREATER_THAN: operator.gt,
+            self.GREATER_OR_EQUAL: operator.ge,
+        }[self]
 
 
 class UserRole(StrEnum):
