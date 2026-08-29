@@ -21,6 +21,12 @@ ALEMBIC_URI="postgresql+asyncpg://user:pass@host:5432/db" alembic upgrade head
 | `auth` | Аутентификация и роли | `users`, `roles`, `users_roles` |
 | `info` | Мета-информация сущностей (профили) | `user_profiles`, `union_profiles`, `game_profiles` |
 
+**Правило размещения:** в схему `info` попадают только данные, по которым
+не имеет смысла фильтровать или сортировать. Все фильтруемые и сортируемые
+поля живут в ресурсных схемах `public`/`auth`. Это фиксирует семантику
+«модель как ресурс»: общая логика фильтров и сортировок применяется
+к ресурсным таблицам без специальной обработки данных из `info`.
+
 ## ER-диаграмма
 
 ```mermaid
@@ -90,6 +96,7 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 | --- | --- | --- |
 | `id` | BIGINT identity | PK |
 | `name` | VARCHAR(100) | NOT NULL, UNIQUE |
+| `city` | VARCHAR(100) | NOT NULL |
 | `type` | enum `union_type` | NOT NULL, DEFAULT `'team'` |
 | `recruitment_status` | enum `union_recruitment_status` | NOT NULL, DEFAULT `'open'` |
 | `status` | enum `union_status` | NOT NULL, DEFAULT `'announced'` |

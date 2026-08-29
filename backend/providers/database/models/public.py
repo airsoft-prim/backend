@@ -14,9 +14,11 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    func,
+    select,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from backend.general.enums import (
     GameStatus,
@@ -33,41 +35,6 @@ from . import DatedBaseModel
 if TYPE_CHECKING:
     from .auth import User
     from .info import GameProfile, UnionProfile
-
-
-class Union(DatedBaseModel):
-    """Объединение страйкбольного портала: команда или оргкомитет."""
-
-    __tablename__ = "unions"
-
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
-    type: Mapped[UnionType] = mapped_column(
-        Enum(UnionType, name="union_type", values_callable=enum_values),
-        default=UnionType.TEAM,
-        server_default=UnionType.TEAM.value,
-    )
-    recruitment_status: Mapped[UnionRecruitmentStatus] = mapped_column(
-        Enum(UnionRecruitmentStatus, name="union_recruitment_status", values_callable=enum_values),
-        default=UnionRecruitmentStatus.OPEN,
-        server_default=UnionRecruitmentStatus.OPEN.value,
-    )
-    status: Mapped[UnionStatus] = mapped_column(
-        Enum(UnionStatus, name="union_status", values_callable=enum_values),
-        default=UnionStatus.ANNOUNCED,
-        server_default=UnionStatus.ANNOUNCED.value,
-    )
-
-    profile: Mapped[UnionProfile] = relationship(
-        back_populates="union",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
-    members: Mapped[list[UnionMember]] = relationship(
-        back_populates="union",
-        cascade="all, delete-orphan",
-    )
-    organized_games: Mapped[list[Game]] = relationship(back_populates="organizer")
 
 
 class UnionMember(DatedBaseModel):
@@ -114,6 +81,48 @@ class UnionMember(DatedBaseModel):
         неподтверждённым, пока не свяжет свой аккаунт.
         """
         return self.user is not None
+
+
+class Union(DatedBaseModel):
+    """Объединение страйкбольного портала: команда или оргкомитет."""
+
+    __tablename__ = "unions"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    city: Mapped[str] = mapped_column(String(100))
+    type: Mapped[UnionType] = mapped_column(
+        Enum(UnionType, name="union_type", values_callable=enum_values),
+        default=UnionType.TEAM,
+        server_default=UnionType.TEAM.value,
+    )
+    recruitment_status: Mapped[UnionRecruitmentStatus] = mapped_column(
+        Enum(UnionRecruitmentStatus, name="union_recruitment_status", values_callable=enum_values),
+        default=UnionRecruitmentStatus.OPEN,
+        server_default=UnionRecruitmentStatus.OPEN.value,
+    )
+    status: Mapped[UnionStatus] = mapped_column(
+        Enum(UnionStatus, name="union_status", values_callable=enum_values),
+        default=UnionStatus.ANNOUNCED,
+        server_default=UnionStatus.ANNOUNCED.value,
+    )
+    members_count: Mapped[int] = column_property(
+        select(func.count(UnionMember.id))
+        .where(UnionMember.union_id == id)  # noqa: A003
+        .correlate_except(UnionMember.__table__)
+        .scalar_subquery()
+    )
+
+    profile: Mapped[UnionProfile] = relationship(
+        back_populates="union",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    members: Mapped[list[UnionMember]] = relationship(
+        back_populates="union",
+        cascade="all, delete-orphan",
+    )
+    organized_games: Mapped[list[Game]] = relationship(back_populates="organizer")
 
 
 class Game(DatedBaseModel):
