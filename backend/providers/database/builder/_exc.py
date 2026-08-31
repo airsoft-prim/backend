@@ -5,5 +5,5 @@ class QueryBuilderError(ProviderError):
     """Ошибка строителя запросов."""
 
 
-class NotApplictableError(QueryBuilderError):
+class NotApplicableError(QueryBuilderError):
     """Неподходящий оператор или значение к целевому полю."""

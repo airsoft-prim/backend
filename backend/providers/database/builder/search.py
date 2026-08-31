@@ -2,6 +2,7 @@ from collections.abc import Mapping
 from copy import copy
 from typing import Any, Self
 
+from sqlalchemy import func, select
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.expression import ColumnElement
 
@@ -10,8 +11,8 @@ from backend.general.types import FilterMapping, SortMapping
 
 
 # TODO: Добавить проверку на соответствие типа колонки и значения фильтра
-class StatementsBuilder:
-    """_summary_"""
+class SearchBuilder:
+    """Строитель поисковых запросов SQLAlchemy."""
 
     def __init__(
         self, statement: Select[Any], *, field_map: Mapping[str, str] | None = None
@@ -29,13 +30,24 @@ class StatementsBuilder:
         self._field_mapper = field_map or {}
 
     def complete(self) -> Select[Any]:
-        """Завершает строительство выражение, возвращая
+        """Завершает строительство выражения, возвращая
         копию результата.
 
         Returns:
             Select[Any]: Построенное выражение.
         """
         return copy(self._statement)
+
+    def as_count(self) -> Select[tuple[int]]:
+        """Оборачивает текущее состояние Statement в count-запрос.
+
+        Подзапрос снимается с текущего состояния без мутаций: дальнейшие
+        вызовы add_sorts/add_pagination на билдере не влияют на результат.
+
+        Returns:
+            Select[tuple[int]]: Запрос `SELECT count(*) FROM (<Select>)`.
+        """
+        return select(func.count()).select_from(self._statement.subquery())
 
     def add_filters(self, filters: list[FilterMapping]) -> Self:
         """Применяет правила фильтрации к Select выражению.
@@ -52,7 +64,7 @@ class StatementsBuilder:
             Self: Экземпляр строителя.
         """
         for filter_ in filters:
-            column = self.resolve_column(filter_["field"])
+            column = self._resolve_column(filter_["field"])
             condition = filter_["operator"].python(column, filter_["value"])
             self._statement = self._statement.where(condition)
 
@@ -73,7 +85,7 @@ class StatementsBuilder:
             Self: Экземпляр строителя.
         """
         for sort_ in sorts:
-            column = self.resolve_column(sort_["field"])
+            column = self._resolve_column(sort_["field"])
             direction = column.asc() if sort_["direction"] == SortDirection.ASC else column.desc()
             self._statement = self._statement.order_by(direction)
 
@@ -94,7 +106,7 @@ class StatementsBuilder:
 
         return self
 
-    def resolve_column(self, name: str) -> ColumnElement[Any]:
+    def _resolve_column(self, name: str) -> ColumnElement[Any]:
         """Возвращает колонку Select-выражения по имени поля.
 
         Имя сначала ищется в field_map — это позволяет обращаться к полям,

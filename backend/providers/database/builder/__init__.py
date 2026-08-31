@@ -1,3 +1,3 @@
-from .builder import StatementsBuilder
+from .search import SearchBuilder
 
-__all__ = ["StatementsBuilder"]
+__all__ = ["SearchBuilder"]
