@@ -23,15 +23,15 @@ class DataclassInstance(Protocol):
     __dataclass_fields__: ClassVar[dict[str, Any]]
 
 
-class SerachService[D: DataclassInstance](Service, ABC):
-    """Базовый абстрактный сервис поиска записей.
+class ServiceWithSearch[D: DataclassInstance](Service, ABC):
+    """Базовый абстрактный сервиса с поиском записей.
 
     Возвращает страницу записей-датаклассов (DTO) типа `D`, отобранных
     и упорядоченных по переданным правилам фильтрации и сортировки.
     """
 
     @abstractmethod
-    async def execute(
+    async def search(
         self, page: int, page_size: int, filters: list[FilterMapping], sorts: list[SortMapping]
     ) -> tuple[list[D], int]:
         """Выполняет поиск и возвращает страницу записей.
