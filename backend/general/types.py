@@ -15,14 +15,15 @@ class RouteDocs(TypedDict, total=False):
     summary: str
     operation_id: str
     description: str
-    status_code: int
     deprecated: bool
     tags: list[str | Enum]
+    status_code: int
     response_description: str
+    responses: dict[int | str, dict[str, Any]] | None
 
 
 class FilterMapping(TypedDict, total=True):
-    """_summary_"""
+    """Правило фильтрации в независимом от API формате."""
 
     field: str
     value: Any
@@ -30,7 +31,7 @@ class FilterMapping(TypedDict, total=True):
 
 
 class SortMapping(TypedDict, total=True):
-    """_summary_"""
+    """Правило сортировки в независимом от API формате."""
 
     field: str
     direction: SortDirection

@@ -14,13 +14,13 @@ class PageOf[D: BaseModel](BaseModel):
 
     items: list[D] = Field(default_factory=list, description="Элементы страницы")
     page: int = Field(ge=1, default=1, description="Номер страницы")
-    page_size: int = Field(default=1, description="Размер страницы страницы")
+    page_size: int = Field(default=1, description="Размер страницы")
     total: int = Field(ge=0, default=0, description="Всего элементов")
 
     @computed_field(description="Всего страниц")
     @property
     def total_pages(self) -> int:
-        """Вычисление общего кол-ва страниц."""
+        """Вычисление общего количества страниц."""
         if self.page_size == self.total:
             return 1
 
@@ -30,7 +30,7 @@ class PageOf[D: BaseModel](BaseModel):
 class SearchParams(BaseModel):
     """Параметры запроса для пагинированного поиска с фильтрацией."""
 
-    page: int = Field(ge=1, default=100, description="Номер страницы")
+    page: int = Field(ge=1, default=1, description="Номер страницы")
     page_size: int = Field(ge=1, le=100, default=30, description="Размер страницы")
 
 
@@ -47,7 +47,7 @@ class Filter[F: StrEnum](BaseModel):
         return field.value
 
     def to_mapping(self) -> FilterMapping:
-        """Приводит фильтры в независимый формат, удобный для бизнес-логики."""
+        """Приводит правило фильтрации в независимый формат, удобный для бизнес-логики."""
         return FilterMapping(self.model_dump())
 
 
@@ -63,12 +63,12 @@ class Sort[S: StrEnum](BaseModel):
         return field.value
 
     def to_mapping(self) -> SortMapping:
-        """Приводит соритровки в независимый формат, удобный для бизнес-логики."""
+        """Приводит сортировки в независимый формат, удобный для бизнес-логики."""
         return SortMapping(self.model_dump())
 
 
 class SearchBody[F: StrEnum, S: StrEnum](BaseModel):
-    """Параметры тела запроса  для пагинированного поиска с фильтрацией."""
+    """Параметры тела запроса для пагинированного поиска с фильтрацией."""
 
-    filers: Sequence[Filter[F]] = Field(description="Список фильтров по полям ресурса")
+    filters: Sequence[Filter[F]] = Field(description="Список фильтров по полям ресурса")
     sorts: Sequence[Sort[S]] = Field(description="Список сортировок по полям ресурса")
