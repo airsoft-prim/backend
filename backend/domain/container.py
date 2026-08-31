@@ -1,5 +1,7 @@
 from typing import Any, cast
 
+from backend.domain.repositories.database import DatabaseRepository
+
 from ._exc import ContainerError
 
 
@@ -49,3 +51,24 @@ class Container:
         except KeyError as error:
             msg = f"Missing {dependency.__name__} dependency."
             raise ContainerError(msg) from error
+
+
+def create_container(*repositories: type[DatabaseRepository]) -> Container:
+    """Создаёт контейнер зависимостей.
+
+    Регистрирует фабрику сессий и переданные классы репозиториев:
+    сессия будет создана фабрикой на каждый запрос, а репозитории
+    инстанцируются UnitOfWork на этой сессии.
+
+    Args:
+        *repositories (type[DatabaseRepository]): Классы репозиториев.
+
+    Returns:
+        Container: Контейнер с зарегистрированными зависимостями.
+    """
+    container = Container()
+
+    for repository in repositories:
+        container.register(repository)
+
+    return container
