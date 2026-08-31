@@ -1,5 +1,6 @@
 from ._base import DatabaseRepository
-from .members import UnionMemberRepository
-from .unions import UnionRepository
+from .members import UnionMembersRepository
+from .unions import UnionsRepository
+from .users import UsersRepository
 
-__all__ = ["DatabaseRepository", "UnionMemberRepository", "UnionRepository"]
+__all__ = ["DatabaseRepository", "UnionMembersRepository", "UnionsRepository", "UsersRepository"]

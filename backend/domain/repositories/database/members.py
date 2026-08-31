@@ -1,5 +1,9 @@
+from backend.providers.database.models import UnionMember
+
 from ._base import DatabaseRepository
 
 
-class UnionMemberRepository(DatabaseRepository):
-    pass
+class UnionMembersRepository(DatabaseRepository):
+    """Репозиторий участников объединений."""
+
+    model = UnionMember
