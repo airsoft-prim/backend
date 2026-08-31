@@ -27,21 +27,24 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
         self._session = session
 
     @overload
-    async def get(self, id_: EntityID) -> D: ...
+    async def get(self, id_: EntityID) -> D | None: ...
 
     @overload
     async def get(self, id_: Sequence[EntityID]) -> Sequence[D]: ...
 
-    async def get(self, id_: EntityID | Sequence[EntityID]) -> D | Sequence[D]:
+    async def get(self, id_: EntityID | Sequence[EntityID]) -> D | Sequence[D] | None:
         """Метод получения сущности или списка сущностей из БД
         по их идентификатору.
+
+        Для одиночного идентификатора возвращает None, если сущность
+        не найдена.
 
         Args:
             id_ (EntityID | Sequence[EntityID]): Идентификатор или список
                 идентификаторов сущностей в БД.
 
         Returns:
-            D | Sequence[D]: ORM модель список моделей сущности.
+            D | Sequence[D] | None: ORM модель, список моделей или None.
         """
         pk = getattr(self.model, self.primary_key)
         stmt = select(self.model).where(
@@ -53,10 +56,13 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
             result = result.scalars().all()
 
         except SQLAlchemyError as error:
-            msg = f"{self.model.__class__.__name__} getting error."
+            msg = f"{self.model.__name__} getting error."
             raise RepositoryError(msg) from error
 
-        return result[0] if len(result) == 1 else result
+        if isinstance(id_, Sequence):
+            return result
+
+        return result[0] if result else None
 
     @overload
     async def save(self, entity: D) -> None: ...
@@ -66,6 +72,10 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
 
     async def save(self, entity: D | Sequence[D]) -> None:
         """Метод сохранения сущности или списка сущностей в БД.
+
+        Добавляет сущности в сессию и выполняет flush, чтобы получить
+        сгенерированные значения (id, server defaults). Commit должен
+        контролироваться извне, чтобы гарантировать атомарность операций.
 
         Args:
             entity (D | Sequence[D]): Сущность или список сущностей
@@ -78,34 +88,49 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
             self._session.add(entity)
 
         try:
-            await self._session.commit()
+            await self._session.flush()
 
         except SQLAlchemyError as error:
-            msg = f"{self.model.__class__.__name__} saving error."
+            msg = f"{self.model.__name__} saving error."
             raise RepositoryError(msg) from error
 
     @overload
-    async def delete(self, id_: EntityID) -> None: ...
+    async def delete(self, id_: EntityID) -> D | None: ...
 
     @overload
-    async def delete(self, id_: Sequence[EntityID]) -> None: ...
+    async def delete(self, id_: Sequence[EntityID]) -> Sequence[D]: ...
 
-    async def delete(self, id_: EntityID | Sequence[EntityID]) -> None:
+    async def delete(self, id_: EntityID | Sequence[EntityID]) -> D | Sequence[D] | None:
         """Метод удаления сущности или списка сущностей из БД
         по их идентификатору.
 
+        Возвращает удалённые сущности: для одиночного идентификатора —
+        сущность или None, если она не найдена; для списка —
+        последовательность удалённых сущностей.
+
         Args:
-            entity (EntityID | list[EntityID]): Идентификатор или список
+            id_ (EntityID | Sequence[EntityID]): Идентификатор или список
                 идентификаторов сущностей в БД.
+
+        Returns:
+            D | Sequence[D] | None: Удалённые сущности.
         """
         pk = getattr(self.model, self.primary_key)
-        stmt = delete_(self.model).where(
-            pk.in_(id_) if isinstance(id_, Sequence) else pk == id_,
+        stmt = (
+            delete_(self.model)
+            .where(pk.in_(id_) if isinstance(id_, Sequence) else pk == id_)
+            .returning(self.model)
         )
 
         try:
-            await self._session.execute(stmt)
+            result = await self._session.execute(stmt)
+            result = result.scalars().all()
 
         except SQLAlchemyError as error:
-            msg = f"{self.model.__class__.__name__} deleting error."
+            msg = f"{self.model.__name__} deleting error."
             raise RepositoryError(msg) from error
+
+        if isinstance(id_, Sequence):
+            return result
+
+        return result[0] if result else None
