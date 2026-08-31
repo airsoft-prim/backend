@@ -9,9 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class PathVariadicPostgresDsn(PostgresDsn):
-    """Класс PostgesDsn, способного менять путь (имя БД). Необходим для корректной и
+    """Класс PostgresDsn, способный менять путь (имя БД). Необходим для корректной и
     удобной смены имени БД при создании тестовых сессий. При смене пути возвращается
-    копия обьекта с изменёнными параметрами.
+    копия объекта с изменёнными параметрами.
     """
 
     def change_path(self, value: str) -> PathVariadicPostgresDsn:
@@ -38,7 +38,7 @@ class PathVariadicPostgresDsn(PostgresDsn):
 
     @property
     def dbname(self) -> str | None:
-        """Имя БД без ведущего слэша. `None` -  если БД в DSN не указана."""
+        """Имя БД без ведущего слэша. `None` - если БД в DSN не указана."""
         name = (self.path or "").lstrip("/")
         return name or None
 

@@ -1,5 +1,5 @@
 class BackendError(Exception):
-    """Ошибка рабюоты Backend'a сервиса онлайн-эквайринга."""
+    """Ошибка работы Backend-сервиса."""
 
 
 class DomainError(BackendError):

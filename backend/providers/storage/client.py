@@ -26,9 +26,9 @@ client = _create_client(config)
 
 
 async def get_storage() -> Minio:
-    """Возвращает клиент подключения к Minio.
+    """Возвращает клиент подключения к MinIO.
 
     Returns:
-        Minio: Клиент хранилища S3 Minio.
+        Minio: Клиент хранилища S3 MinIO.
     """
     return client

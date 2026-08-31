@@ -15,7 +15,7 @@ async def liveness_healthcheck() -> PlainTextResponse:
     """Функция проверки доступности приложения.
 
     Returns:
-        JSONResponse: Ответ в формате JSON.
+        PlainTextResponse: Пустой ответ без тела.
     """
     logger.success("Application healthy.")
 
@@ -27,7 +27,7 @@ async def readiness_healthcheck() -> PlainTextResponse:
     """Функция проверки готовности приложения.
 
     Returns:
-        JSONResponse: Ответ в формате JSON.
+        PlainTextResponse: Пустой ответ без тела.
     """
     try:
         async with engine.connect() as conn:

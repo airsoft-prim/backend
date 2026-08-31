@@ -23,7 +23,7 @@ class FilterOperator(StrEnum):
 
     @property
     def python(self) -> Callable[[Any, Any], Any]:
-        """Возвращет соответствующий Python-оператор."""
+        """Возвращает соответствующий Python-оператор."""
         return {
             self.EQUAL: operator.eq,
             self.NOT_EQUAL: operator.ne,

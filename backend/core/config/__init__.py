@@ -20,7 +20,7 @@ def get_app_config() -> Configs:
     """Метод, предоставляющий конфигурацию приложения.
 
     Returns:
-        ApplicationConfigs: Конфигурация приложения.
+        Configs: Конфигурация приложения.
     """
     return Configs()
 

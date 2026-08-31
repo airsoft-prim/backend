@@ -8,7 +8,7 @@ def _create_engine(config: Configs) -> AsyncEngine:
     """Создание асинхронного движка SQLAlchemy.
 
     Args:
-        settings (Configs): Конфигурация проекта.
+        config (Configs): Конфигурация проекта.
 
     Returns:
         Engine: Движок SQLAlchemy

@@ -22,7 +22,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
 
     yield
 
-    logger.warning("Application has shutting down.")
+    logger.warning("Application is shutting down.")
 
 
 app = FastAPI(
