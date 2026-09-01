@@ -116,8 +116,7 @@ UPDATE — только у таблиц-сущностей (`DatedBaseModel`); �
 | `user_id` | BIGINT | NULL, FK → `auth.users.id` ON DELETE SET NULL |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT `now()` |
 
-Ограничения: `UNIQUE (union_id, user_id)`, `UNIQUE (union_id, callsign)`,
-hash-индекс на `user_id`.
+Ограничения: `UNIQUE (union_id, user_id)`, hash-индекс на `user_id`.
 
 ### `public.games`
 
@@ -180,6 +179,6 @@ hash-индексы на `game_id`, `member_id`.
   `union_members.user_id`, `game_registrations.game_id/member_id`);
 - **Check-констрейнты** защищают согласованность дат, взноса и лимита;
 - **unique** — PK, `users.callsign`, `users.username`, `roles.name`, `unions.name`,
-  `(union_id, user_id)`, `(union_id, callsign)`;
+  `(union_id, user_id)`;
 - имена констрейнтов/индексов генерирует единый naming convention
   (`ix_`, `uq_`, `ck_`, `fk_`, `pk_`).

@@ -9,7 +9,6 @@ from backend.general.schemas import PageOf
 from .docs import (
     ADD_MEMBER_DOCS,
     CREATE_TEAM_DOCS,
-    GET_MEMBER_DOCS,
     GET_MEMBERS_DOCS,
     GET_TEAM_DOCS,
     REMOVE_MEMBER_DOCS,
@@ -135,11 +134,6 @@ async def get_team_members() -> None:
 
 @router.post("/{team_id}/members", **ADD_MEMBER_DOCS)
 async def add_team_member() -> None:
-    pass
-
-
-@router.get("/{team_id}/members/{member_id}", **GET_MEMBER_DOCS)
-async def get_team_member() -> None:
     pass
 
 

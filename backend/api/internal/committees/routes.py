@@ -10,7 +10,6 @@ from .docs import (
     ADD_MEMBER_DOCS,
     CREATE_COMMITTEE_DOCS,
     GET_COMMITTEE_DOCS,
-    GET_MEMBER_DOCS,
     GET_MEMBERS_DOCS,
     REMOVE_MEMBER_DOCS,
     SEARCH_COMMITTEES_DOCS,
@@ -135,11 +134,6 @@ async def get_committee_members() -> None:
 
 @router.post("/{committee_id}/members", **ADD_MEMBER_DOCS)
 async def add_committee_member() -> None:
-    pass
-
-
-@router.get("/{committee_id}/members/{member_id}", **GET_MEMBER_DOCS)
-async def get_committee_member() -> None:
     pass
 
 

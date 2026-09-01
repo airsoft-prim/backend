@@ -9,12 +9,14 @@ from backend.domain.repositories.database import (
     UnionsRepository,
     UsersRepository,
 )
-from backend.domain.services import CommitteesService
+from backend.domain.services import CommitteesService, MembersService
 from backend.providers.database import async_session
 
 
-async def get_committees_service_container() -> Container:
+async def dependency_container() -> Container:
     """Возвращает контейнер зависимостей для текущего запроса.
+
+    Контейнер общий для сервисов модуля: CommitteesService и MembersService.
 
     Returns:
         Container: Контейнер зависимостей запроса.
@@ -30,7 +32,7 @@ async def get_committees_service_container() -> Container:
 
 
 async def get_committees_service(
-    container: Annotated[Container, Depends(get_committees_service_container)],
+    container: Annotated[Container, Depends(dependency_container)],
 ) -> CommitteesService:
     """Возвращает сервис орг-комитетов на контейнере текущего запроса.
 
@@ -41,3 +43,17 @@ async def get_committees_service(
         CommitteesService: Сервис орг-комитетов.
     """
     return CommitteesService(container=container)
+
+
+async def get_members_service(
+    container: Annotated[Container, Depends(dependency_container)],
+) -> MembersService:
+    """Возвращает сервис участников на контейнере текущего запроса.
+
+    Args:
+        container (Annotated[Container, Depends]): Контейнер зависимостей.
+
+    Returns:
+        MembersService: Сервис участников объединений.
+    """
+    return MembersService(container=container)

@@ -9,12 +9,14 @@ from backend.domain.repositories.database import (
     UnionsRepository,
     UsersRepository,
 )
-from backend.domain.services import TeamsService
+from backend.domain.services import MembersService, TeamsService
 from backend.providers.database import get_session
 
 
-async def get_teams_service_container() -> Container:
+async def dependency_container() -> Container:
     """Возвращает контейнер зависимостей для текущего запроса.
+
+    Контейнер общий для сервисов модуля: TeamsService и MembersService.
 
     Returns:
         Container: Контейнер зависимостей запроса.
@@ -28,7 +30,7 @@ async def get_teams_service_container() -> Container:
 
 
 async def get_teams_service(
-    container: Annotated[Container, Depends(get_teams_service_container)],
+    container: Annotated[Container, Depends(dependency_container)],
 ) -> TeamsService:
     """Возвращает сервис команд на контейнере текущего запроса.
 
@@ -39,3 +41,17 @@ async def get_teams_service(
         TeamsService: Сервис команд.
     """
     return TeamsService(container=container)
+
+
+async def get_members_service(
+    container: Annotated[Container, Depends(dependency_container)],
+) -> MembersService:
+    """Возвращает сервис участников на контейнере текущего запроса.
+
+    Args:
+        container (Annotated[Container, Depends]): Контейнер зависимостей.
+
+    Returns:
+        MembersService: Сервис участников объединений.
+    """
+    return MembersService(container=container)

@@ -90,22 +90,3 @@ class UnionsRepository(DatabaseRepository):
         except SQLAlchemyError as error:
             message = f"{self.model.__name__} getting error."
             raise RepositoryError(message) from error
-
-    async def get_by_name(self, name: str) -> Union | None:
-        """Возвращает объединение по названию.
-
-        Args:
-            name (str): Название объединения.
-
-        Returns:
-            Union | None: Объединение или None, если не найдено.
-        """
-        statement = select(self.model).where(self.model.name == name)
-
-        try:
-            result = await self._session.scalars(statement)
-            return result.one_or_none()
-
-        except SQLAlchemyError as error:
-            message = f"{self.model.__name__} getting by name error."
-            raise RepositoryError(message) from error

@@ -48,7 +48,6 @@ class UnionMember(DatedBaseModel):
 
     __tablename__ = "union_members"
     __table_args__ = (
-        UniqueConstraint("union_id", "user_id", name="uq_union_members_union_id_user_id"),
         UniqueConstraint("union_id", "callsign", name="uq_union_members_union_id_callsign"),
         Index(None, "user_id", postgresql_using="hash"),
     )
