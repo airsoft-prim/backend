@@ -3,10 +3,10 @@ from typing import ClassVar, overload
 from uuid import UUID
 
 from sqlalchemy import delete as delete_, select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.repositories import AbstractRepository, RepositoryError
+from backend.domain.repositories import AbstractRepository, ConflictError, RepositoryError
 from backend.providers.database import BaseModel
 
 type EntityID = UUID | int
@@ -80,6 +80,11 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
         Args:
             entity (D | Sequence[D]): Сущность или список сущностей
                 для сохранения.
+
+        Raises:
+            ConflictError: Если сохранение нарушает ограничение БД
+                (например, неуникальное имя).
+            RepositoryError: При других ошибках БД.
         """
         if isinstance(entity, list):
             self._session.add_all(entity)
@@ -89,6 +94,10 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
 
         try:
             await self._session.flush()
+
+        except IntegrityError as error:
+            msg = f"{self.model.__name__} violates a database constraint."
+            raise ConflictError(msg) from error
 
         except SQLAlchemyError as error:
             msg = f"{self.model.__name__} saving error."
@@ -114,6 +123,11 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
 
         Returns:
             D | Sequence[D] | None: Удалённые сущности.
+
+        Raises:
+            ConflictError: Если удаление нарушает ограничение БД
+                (например, на запись ссылаются другие).
+            RepositoryError: При других ошибках БД.
         """
         pk = getattr(self.model, self.primary_key)
         stmt = (
@@ -125,6 +139,10 @@ class DatabaseRepository[D: BaseModel](AbstractRepository):
         try:
             result = await self._session.execute(stmt)
             result = result.scalars().all()
+
+        except IntegrityError as error:
+            msg = f"{self.model.__name__} violates a database constraint."
+            raise ConflictError(msg) from error
 
         except SQLAlchemyError as error:
             msg = f"{self.model.__name__} deleting error."

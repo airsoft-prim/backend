@@ -7,7 +7,3 @@ class ServiceError(DomainError):
 
 class NotFoundError(ServiceError):
     """Целевой объект не найден."""
-
-
-class ConflictError(ServiceError):
-    """Конфликт с текущим состоянием данных."""
