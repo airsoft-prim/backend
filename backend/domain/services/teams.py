@@ -107,7 +107,7 @@ class TeamsService(ServiceWithSearch[TeamRecordDTO]):
 
             union = await unions_repo.get_with_profile(team_id)
 
-            if union is None:
+            if union is None or union.type != UnionType.TEAM:
                 message = f"Team <{team_id}> not found."
                 raise NotFoundError(message) from None
 
@@ -201,7 +201,9 @@ class TeamsService(ServiceWithSearch[TeamRecordDTO]):
         async with self.unit_of_work() as uow:
             unions_repo = uow.database_repository(UnionsRepository)
 
-            if (union := await unions_repo.get_with_profile(team_id)) is None:
+            union = await unions_repo.get_with_profile(team_id)
+
+            if union is None or union.type != UnionType.TEAM:
                 message = f"Team <{team_id}> not found."
                 raise NotFoundError(message) from None
 
