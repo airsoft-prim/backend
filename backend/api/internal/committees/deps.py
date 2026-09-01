@@ -13,10 +13,10 @@ from backend.domain.services import CommitteesService, MembersService
 from backend.providers.database import async_session
 
 
-async def dependency_container() -> Container:
-    """Возвращает контейнер зависимостей для текущего запроса.
+async def unions_container() -> Container:
+    """Возвращает контейнер зависимостей сервиса орг-комитетов.
 
-    Контейнер общий для сервисов модуля: CommitteesService и MembersService.
+    Регистрируются только репозитории, нужные CommitteesService.
 
     Returns:
         Container: Контейнер зависимостей запроса.
@@ -24,15 +24,29 @@ async def dependency_container() -> Container:
     repos = [UnionsRepository, UnionMembersRepository, UsersRepository]
     container = create_container(*repos)
 
-    # Фабрикой сессий служит sessionmaker: генератор get_session
-    # рассчитан на FastAPI-DI и здесь не подходит.
+    container.register(async_session, as_type=SessionFactory)
+
+    return container
+
+
+async def members_container() -> Container:
+    """Возвращает контейнер зависимостей сервиса участников.
+
+    Регистрируются только репозитории, нужные MembersService.
+
+    Returns:
+        Container: Контейнер зависимостей запроса.
+    """
+    repos = [UnionMembersRepository, UsersRepository]
+    container = create_container(*repos)
+
     container.register(async_session, as_type=SessionFactory)
 
     return container
 
 
 async def get_committees_service(
-    container: Annotated[Container, Depends(dependency_container)],
+    container: Annotated[Container, Depends(unions_container)],
 ) -> CommitteesService:
     """Возвращает сервис орг-комитетов на контейнере текущего запроса.
 
@@ -46,7 +60,7 @@ async def get_committees_service(
 
 
 async def get_members_service(
-    container: Annotated[Container, Depends(dependency_container)],
+    container: Annotated[Container, Depends(members_container)],
 ) -> MembersService:
     """Возвращает сервис участников на контейнере текущего запроса.
 

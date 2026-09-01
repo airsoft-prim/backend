@@ -4,7 +4,12 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.networks import AnyHttpUrl
 
-from backend.general.enums import UnionRecruitmentStatus, UnionStatus, UnionType
+from backend.general.enums import (
+    UnionMemberRank,
+    UnionRecruitmentStatus,
+    UnionStatus,
+    UnionType,
+)
 from backend.general.schemas import SearchBody, SearchParams
 
 
@@ -102,3 +107,34 @@ class UpdateTeamBody(BaseModel):
     recruitment_status: UnionRecruitmentStatus | None = Field(
         default=None, description="Состояние набора"
     )
+
+
+class Member(BaseModel):
+    """Участник команды."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(ge=0, description="Идентификатор участника")
+    callsign: str = Field(description="Позывной участника")
+    tag: str | None = Field(default=None, description="Тег участника")
+    user_id: int | None = Field(default=None, description="Идентификатор привязанного аккаунта")
+    avatar_url: AnyHttpUrl | None = Field(default=None, description="Ссылка на аватар пользователя")
+
+
+class AddMemberBody(BaseModel):
+    """Параметры добавления участника в команду.
+
+    Если в системе уже зарегистрирован игрок с таким позывным — участник
+    автоматически привязывается к его аккаунту; иначе остаётся виртуальным
+    бойцом до регистрации игрока с таким же позывным.
+    """
+
+    callsign: str = Field(description="Позывной участника")
+
+
+class UpdateMemberBody(BaseModel):
+    """Обновляемые данные участника: передаются только изменяемые поля."""
+
+    callsign: str | None = Field(default=None, description="Позывной участника")
+    rank: UnionMemberRank | None = Field(default=None, description="Ранг участника")
+    tag: str | None = Field(default=None, description="Тег участника")

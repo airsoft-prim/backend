@@ -2,8 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, Query
 
-from backend.api.internal.teams.deps import get_teams_service
-from backend.domain.services import TeamsService
+from backend.api.internal.teams.deps import get_members_service, get_teams_service
+from backend.domain.services import MembersService, TeamsService
 from backend.general.schemas import PageOf
 
 from .docs import (
@@ -17,12 +17,15 @@ from .docs import (
     UPDATE_TEAM_DOCS,
 )
 from .schemas import (
+    AddMemberBody,
     CreatedTeam,
     CreateTeamBody,
+    Member,
     SearchTeamsBody,
     SearchTeamsParams,
     Team,
     TeamRecord,
+    UpdateMemberBody,
     UpdateTeamBody,
 )
 
@@ -33,19 +36,19 @@ router = APIRouter(prefix="/teams", tags=["Команды"])
 async def search_teams(
     params: Annotated[SearchTeamsParams, Query()],
     body: Annotated[SearchTeamsBody, Body()],
-    service: Annotated[TeamsService, Depends(get_teams_service)],
+    teams_service: Annotated[TeamsService, Depends(get_teams_service)],
 ) -> PageOf[TeamRecord]:
     """Ищет команды по фильтрам с сортировкой и пагинацией.
 
     Args:
         params (Annotated[SearchTeamsParams, Query]): Параметры пагинации.
         body (Annotated[SearchTeamsBody, Body]): Фильтры и сортировки.
-        service (Annotated[TeamsService, Depends]): Сервис команд.
+        teams_service (Annotated[TeamsService, Depends]): Сервис команд.
 
     Returns:
         PageOf[TeamRecord]: Страница команд.
     """
-    items, total = await service.search(
+    items, total = await teams_service.search(
         page=params.page,
         page_size=params.page_size,
         filters=[f.to_mapping() for f in body.filters],
@@ -63,18 +66,18 @@ async def search_teams(
 @router.post("/", **CREATE_TEAM_DOCS)
 async def create_team(
     body: Annotated[CreateTeamBody, Body()],
-    service: Annotated[TeamsService, Depends(get_teams_service)],
+    teams_service: Annotated[TeamsService, Depends(get_teams_service)],
 ) -> CreatedTeam:
     """Создаёт команду вместе с профилем и первым участником.
 
     Args:
         body (Annotated[CreateTeamBody, Body]): Данные создаваемой команды.
-        service (Annotated[TeamsService, Depends]): Сервис команд.
+        teams_service (Annotated[TeamsService, Depends]): Сервис команд.
 
     Returns:
         CreatedTeam: Идентификатор и название созданной команды.
     """
-    team = await service.create(
+    team = await teams_service.create(
         creator_id=0,  # TODO: Заменить на авторизованного пользователя
         name=body.name,
         city=body.city,
@@ -88,18 +91,18 @@ async def create_team(
 @router.get("/{team_id}", **GET_TEAM_DOCS)
 async def get_team(
     team_id: Annotated[int, Path],
-    service: Annotated[TeamsService, Depends(get_teams_service)],
+    teams_service: Annotated[TeamsService, Depends(get_teams_service)],
 ) -> Team:
     """Возвращает команду по её идентификатору.
 
     Args:
         team_id (Annotated[int, Path]): Идентификатор команды.
-        service (Annotated[TeamsService, Depends]): Сервис команд.
+        teams_service (Annotated[TeamsService, Depends]): Сервис команд.
 
     Returns:
         Team: Полные данные о команде.
     """
-    team = await service.get(team_id)
+    team = await teams_service.get(team_id)
 
     return Team.model_validate(team)
 
@@ -108,40 +111,120 @@ async def get_team(
 async def update_team(
     team_id: Annotated[int, Path],
     body: Annotated[UpdateTeamBody, Body()],
-    service: Annotated[TeamsService, Depends(get_teams_service)],
+    teams_service: Annotated[TeamsService, Depends(get_teams_service)],
 ) -> Team:
     """Обновляет данные команды.
 
     Args:
         team_id ( Annotated[int, Path]): Идентификатор команды.
         body (Annotated[UpdateTeamBody, Body]): Обновляемые поля.
-        service (Annotated[TeamsService, Depends]): Сервис команд.
+        teams_service (Annotated[TeamsService, Depends]): Сервис команд.
 
     Returns:
         Team: Полные, обновлённые данные команды.
     """
     changes = body.model_dump(exclude_none=True)
 
-    team = await service.update(team_id=team_id, **changes)
+    team = await teams_service.update(team_id=team_id, **changes)
 
     return Team.model_validate(team)
 
 
 @router.get("/{team_id}/members", **GET_MEMBERS_DOCS)
-async def get_team_members() -> None:
-    pass
+async def get_team_members(
+    team_id: Annotated[int, Path],
+    service: Annotated[TeamsService, Depends(get_teams_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> list[Member]:
+    """Возвращает список участников команды.
+
+    Args:
+        team_id (Annotated[int, Path]): Идентификатор команды.
+        service (Annotated[TeamsService, Depends]): Сервис команд.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+
+    Returns:
+        list[Member]: Участники команды.
+    """
+    await service.get(team_id)
+
+    members = await members_service.get_members(union_id=team_id)
+
+    return [Member.model_validate(m) for m in members]
 
 
 @router.post("/{team_id}/members", **ADD_MEMBER_DOCS)
-async def add_team_member() -> None:
-    pass
+async def add_team_member(
+    team_id: Annotated[int, Path],
+    body: Annotated[AddMemberBody, Body()],
+    teams_service: Annotated[TeamsService, Depends(get_teams_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> Member:
+    """Добавляет участника в команду.
+
+    Args:
+        team_id (Annotated[int, Path]): Идентификатор команды.
+        body (Annotated[AddMemberBody, Body]): Данные участника.
+        teams_service (Annotated[TeamsService, Depends]): Сервис команд.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+
+    Returns:
+        Member: Созданный участник.
+    """
+    await teams_service.get(team_id)
+
+    member = await members_service.add_member(union_id=team_id, callsign=body.callsign)
+
+    return Member.model_validate(member)
 
 
 @router.patch("/{team_id}/members/{member_id}", **UPDATE_MEMBER_DOCS)
-async def update_team_member() -> None:
-    pass
+async def update_team_member(
+    team_id: Annotated[int, Path],
+    member_id: Annotated[int, Path],
+    body: Annotated[UpdateMemberBody, Body()],
+    teams_service: Annotated[TeamsService, Depends(get_teams_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> Member:
+    """Обновляет данные участника команды.
+
+    Args:
+        team_id (Annotated[int, Path]): Идентификатор команды.
+        member_id (Annotated[int, Path]): Идентификатор участника.
+        body (Annotated[UpdateMemberBody, Body]): Обновляемые поля.
+        teams_service (Annotated[TeamsService, Depends]): Сервис команд.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+
+    Returns:
+        Member: Обновлённый участник.
+    """
+    await teams_service.get(team_id)
+
+    changes = body.model_dump(exclude_none=True)
+    member = await members_service.update_member(
+        member_id=member_id,
+        union_id=team_id,
+        **changes,
+    )
+
+    return Member.model_validate(member)
 
 
 @router.delete("/{team_id}/members/{member_id}", **REMOVE_MEMBER_DOCS)
-async def remove_team_member() -> None:
-    pass
+async def remove_team_member(
+    team_id: Annotated[int, Path],
+    member_id: Annotated[int, Path],
+    teams_service: Annotated[TeamsService, Depends(get_teams_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> None:
+    """Исключает участника из команды.
+
+    Args:
+        team_id (Annotated[int, Path]): Идентификатор команды.
+        member_id (Annotated[int, Path]): Идентификатор участника.
+        teams_service (Annotated[TeamsService, Depends]): Сервис команд.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+    """
+    await teams_service.get(team_id)
+
+    await members_service.remove_member(union_id=team_id, member_id=member_id)

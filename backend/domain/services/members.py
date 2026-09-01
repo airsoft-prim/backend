@@ -121,6 +121,7 @@ class MembersService(Service):
         self,
         member_id: int,
         *,
+        union_id: int,
         tag: str | None = None,
         callsign: str | None = None,
         rank: UnionMemberRank | None = None,
@@ -131,12 +132,14 @@ class MembersService(Service):
 
         Args:
             member_id (int): Идентификатор участника.
+            union_id (int): Идентификатор объединения, в котором состоит участник.
             tag (str | None): Новый тег. Defaults to None.
             callsign (str | None): Новый позывной. Defaults to None.
             rank (UnionMemberRank | None): Новый ранг. Defaults to None.
 
         Raises:
-            NotFoundError: Если участник с данным ID не найден.
+            NotFoundError: Если участник с данным ID не найден или
+                не состоит в указанном объединении.
 
         Returns:
             UnionMemberDTO: Обновлённый участник.
@@ -144,7 +147,9 @@ class MembersService(Service):
         async with self.unit_of_work() as uow:
             members_repo = uow.database_repository(UnionMembersRepository)
 
-            if (member := await members_repo.get(member_id)) is None:
+            member = await members_repo.get(member_id)
+
+            if member is None or member.union_id != union_id:
                 message = f"Member <{member_id}> not found."
                 raise NotFoundError(message) from None
 

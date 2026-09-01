@@ -4,7 +4,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.networks import AnyHttpUrl
 
-from backend.general.enums import UnionStatus, UnionType
+from backend.general.enums import UnionMemberRank, UnionStatus, UnionType
 from backend.general.schemas import SearchBody, SearchParams
 
 
@@ -43,11 +43,7 @@ class CommitteeRecord(BaseModel):
 
 
 class CreateCommitteeBody(BaseModel):
-    """Параметры создания орг-комитета.
-
-    Камуфляж и цвет снаряжения комитету не задаются: они фиксированы
-    (`None` и «Светоотражающий» соответственно).
-    """
+    """Параметры создания орг-комитета."""
 
     name: str = Field(description="Название орг-комитета")
     motto: str | None = Field(default=None, description="Девиз орг-комитета")
@@ -107,3 +103,29 @@ class UpdateCommitteeBody(BaseModel):
     description: str | None = Field(default=None, description="Описание орг-комитета")
     avatar_url: str | None = Field(default=None, description="Ссылка на аватар")
     banner_url: str | None = Field(default=None, description="Ссылка на баннер")
+
+
+class Member(BaseModel):
+    """Участник орг-комитета."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(ge=0, description="Идентификатор участника")
+    callsign: str = Field(description="Позывной участника")
+    tag: str | None = Field(default=None, description="Тег участника")
+    user_id: int | None = Field(default=None, description="Идентификатор привязанного аккаунта")
+    avatar_url: AnyHttpUrl | None = Field(default=None, description="Ссылка на аватар пользователя")
+
+
+class AddMemberBody(BaseModel):
+    """Параметры добавления участника в орг-комитет."""
+
+    callsign: str = Field(description="Позывной участника")
+
+
+class UpdateMemberBody(BaseModel):
+    """Обновляемые данные участника: передаются только изменяемые поля."""
+
+    callsign: str | None = Field(default=None, description="Позывной участника")
+    rank: UnionMemberRank | None = Field(default=None, description="Ранг участника")
+    tag: str | None = Field(default=None, description="Тег участника")

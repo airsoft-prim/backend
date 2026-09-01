@@ -2,8 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, Query
 
-from backend.api.internal.committees.deps import get_committees_service
-from backend.domain.services import CommitteesService
+from backend.api.internal.committees.deps import get_committees_service, get_members_service
+from backend.domain.services import CommitteesService, MembersService
 from backend.general.schemas import PageOf
 
 from .docs import (
@@ -17,13 +17,16 @@ from .docs import (
     UPDATE_MEMBER_DOCS,
 )
 from .schemas import (
+    AddMemberBody,
     Committee,
     CommitteeRecord,
     CreateCommitteeBody,
     CreatedCommittee,
+    Member,
     SearchCommitteesBody,
     SearchCommitteesParams,
     UpdateCommitteeBody,
+    UpdateMemberBody,
 )
 
 router = APIRouter(prefix="/committees", tags=["Орг-комитеты"])
@@ -33,7 +36,7 @@ router = APIRouter(prefix="/committees", tags=["Орг-комитеты"])
 async def search_committees(
     params: Annotated[SearchCommitteesParams, Query()],
     body: Annotated[SearchCommitteesBody, Body()],
-    service: Annotated[CommitteesService, Depends(get_committees_service)],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
 ) -> PageOf[CommitteeRecord]:
     """Ищет орг-комитеты по фильтрам с сортировкой и пагинацией.
 
@@ -45,7 +48,7 @@ async def search_committees(
     Returns:
         PageOf[CommitteeRecord]: Страница орг-комитетов.
     """
-    items, total = await service.search(
+    items, total = await committee_service.search(
         page=params.page,
         page_size=params.page_size,
         filters=[f.to_mapping() for f in body.filters],
@@ -63,18 +66,18 @@ async def search_committees(
 @router.post("/", **CREATE_COMMITTEE_DOCS)
 async def create_committee(
     body: Annotated[CreateCommitteeBody, Body()],
-    service: Annotated[CommitteesService, Depends(get_committees_service)],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
 ) -> CreatedCommittee:
     """Создаёт орг-комитет вместе с профилем и первым участником.
 
     Args:
         body (Annotated[CreateCommitteeBody, Body]): Данные создаваемого комитета.
-        service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
 
     Returns:
         CreatedCommittee: Идентификатор и название созданного орг-комитета.
     """
-    committee = await service.create(
+    committee = await committee_service.create(
         creator_id=0,  # TODO: Заменить на авторизованного пользователя
         name=body.name,
         city=body.city,
@@ -88,7 +91,7 @@ async def create_committee(
 @router.get("/{committee_id}", **GET_COMMITTEE_DOCS)
 async def get_committee(
     committee_id: Annotated[int, Path],
-    service: Annotated[CommitteesService, Depends(get_committees_service)],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
 ) -> Committee:
     """Возвращает орг-комитет по его идентификатору.
 
@@ -99,7 +102,7 @@ async def get_committee(
     Returns:
         Committee: Полные данные об орг-комитете.
     """
-    committee = await service.get(committee_id)
+    committee = await committee_service.get(committee_id)
 
     return Committee.model_validate(committee)
 
@@ -108,40 +111,120 @@ async def get_committee(
 async def update_committee(
     committee_id: Annotated[int, Path],
     body: Annotated[UpdateCommitteeBody, Body()],
-    service: Annotated[CommitteesService, Depends(get_committees_service)],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
 ) -> Committee:
     """Обновляет данные орг-комитета.
 
     Args:
         committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
         body (Annotated[UpdateCommitteeBody, Body]): Обновляемые поля.
-        service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
 
     Returns:
         Committee: Полные, обновлённые данные орг-комитета.
     """
     changes = body.model_dump(exclude_none=True)
 
-    committee = await service.update(committee_id=committee_id, **changes)
+    committee = await committee_service.update(committee_id=committee_id, **changes)
 
     return Committee.model_validate(committee)
 
 
 @router.get("/{committee_id}/members", **GET_MEMBERS_DOCS)
-async def get_committee_members() -> None:
-    pass
+async def get_committee_members(
+    committee_id: Annotated[int, Path],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> list[Member]:
+    """Возвращает список участников орг-комитета.
+
+    Args:
+        committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+
+    Returns:
+        list[Member]: Участники орг-комитета.
+    """
+    await committee_service.get(committee_id)
+
+    members = await members_service.get_members(union_id=committee_id)
+
+    return [Member.model_validate(m) for m in members]
 
 
 @router.post("/{committee_id}/members", **ADD_MEMBER_DOCS)
-async def add_committee_member() -> None:
-    pass
+async def add_committee_member(
+    committee_id: Annotated[int, Path],
+    body: Annotated[AddMemberBody, Body()],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> Member:
+    """Добавляет участника в орг-комитет.
+
+    Args:
+        committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
+        body (Annotated[AddMemberBody, Body]): Данные участника.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+
+    Returns:
+        Member: Созданный участник.
+    """
+    await committee_service.get(committee_id)
+
+    member = await members_service.add_member(union_id=committee_id, callsign=body.callsign)
+
+    return Member.model_validate(member)
 
 
 @router.patch("/{committee_id}/members/{member_id}", **UPDATE_MEMBER_DOCS)
-async def update_committee_member() -> None:
-    pass
+async def update_committee_member(
+    committee_id: Annotated[int, Path],
+    member_id: Annotated[int, Path],
+    body: Annotated[UpdateMemberBody, Body()],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> Member:
+    """Обновляет данные участника орг-комитета.
+
+    Args:
+        committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
+        member_id (Annotated[int, Path]): Идентификатор участника.
+        body (Annotated[UpdateMemberBody, Body]): Обновляемые поля.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+
+    Returns:
+        Member: Обновлённый участник.
+    """
+    await committee_service.get(committee_id)
+
+    changes = body.model_dump(exclude_none=True)
+    member = await members_service.update_member(
+        member_id=member_id,
+        union_id=committee_id,
+        **changes,
+    )
+
+    return Member.model_validate(member)
 
 
 @router.delete("/{committee_id}/members/{member_id}", **REMOVE_MEMBER_DOCS)
-async def remove_committee_member() -> None:
-    pass
+async def remove_committee_member(
+    committee_id: Annotated[int, Path],
+    member_id: Annotated[int, Path],
+    committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    members_service: Annotated[MembersService, Depends(get_members_service)],
+) -> None:
+    """Исключает участника из орг-комитета.
+
+    Args:
+        committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
+        member_id (Annotated[int, Path]): Идентификатор участника.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        members_service (Annotated[MembersService, Depends]): Сервис участников.
+    """
+    await committee_service.get(committee_id)
+
+    await members_service.remove_member(union_id=committee_id, member_id=member_id)
