@@ -1,3 +1,3 @@
-from fastapi import APIRouter
+from .routes import router
 
-router = APIRouter(prefix="/health", tags=["Состояние приложения"])
+__all__ = ["router"]

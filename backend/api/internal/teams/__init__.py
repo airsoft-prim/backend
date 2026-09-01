@@ -1,3 +1,3 @@
-from fastapi import APIRouter
+from .routes import router
 
-router = APIRouter(prefix="/teams", tags=["Команды"])
+__all__ = ["router"]

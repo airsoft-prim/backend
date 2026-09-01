@@ -1,4 +1,4 @@
-from fastapi import status
+from fastapi import APIRouter, status
 from fastapi.responses import PlainTextResponse
 from loguru import logger
 from sqlalchemy import text
@@ -6,8 +6,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from backend.providers.database import engine
 
-from . import router
 from .docs import LIVENESS_DOCS, READINESS_DOCS
+
+router = APIRouter(prefix="/health", tags=["Состояние приложения"])
 
 
 @router.get("/liveness", **LIVENESS_DOCS)

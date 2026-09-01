@@ -1,12 +1,11 @@
 from typing import Annotated
 
-from fastapi import Body, Depends, Path, Query
+from fastapi import APIRouter, Body, Depends, Path, Query
 
 from backend.api.internal.teams.deps import get_teams_service
 from backend.domain.services import TeamsService
 from backend.general.schemas import PageOf
 
-from . import router
 from .docs import (
     ADD_MEMBER_DOCS,
     CREATE_TEAM_DOCS,
@@ -27,6 +26,8 @@ from .schemas import (
     TeamRecord,
     UpdateTeamBody,
 )
+
+router = APIRouter(prefix="/teams", tags=["Команды"])
 
 
 @router.post("/search", **SEARCH_TEAMS_DOCS)
