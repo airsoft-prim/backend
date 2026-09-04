@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, Path, Query
 from backend.api.internal.committees.deps import get_committees_service, get_members_service
 from backend.domain.services import CommitteesService, MembersService
 from backend.general.schemas import PageOf
+from backend.general.security.types import UserSession
 
 from .docs import (
     ADD_MEMBER_DOCS,
@@ -28,6 +29,7 @@ from .schemas import (
     UpdateCommitteeBody,
     UpdateMemberBody,
 )
+from .security import COMMON_COMMITTEE_SEC
 
 router = APIRouter(prefix="/committees", tags=["Орг-комитеты"])
 
@@ -37,13 +39,15 @@ async def search_committees(
     params: Annotated[SearchCommitteesParams, Query()],
     body: Annotated[SearchCommitteesBody, Body()],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> PageOf[CommitteeRecord]:
     """Ищет орг-комитеты по фильтрам с сортировкой и пагинацией.
 
     Args:
         params (Annotated[SearchCommitteesParams, Query]): Параметры пагинации.
         body (Annotated[SearchCommitteesBody, Body]): Фильтры и сортировки.
-        service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
 
     Returns:
         PageOf[CommitteeRecord]: Страница орг-комитетов.
@@ -67,18 +71,20 @@ async def search_committees(
 async def create_committee(
     body: Annotated[CreateCommitteeBody, Body()],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> CreatedCommittee:
     """Создаёт орг-комитет вместе с профилем и первым участником.
 
     Args:
         body (Annotated[CreateCommitteeBody, Body]): Данные создаваемого комитета.
         committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
 
     Returns:
         CreatedCommittee: Идентификатор и название созданного орг-комитета.
     """
     committee = await committee_service.create(
-        creator_id=0,  # TODO: Заменить на авторизованного пользователя
+        creator_id=_session.user_id,
         name=body.name,
         city=body.city,
         motto=body.motto,
@@ -92,12 +98,14 @@ async def create_committee(
 async def get_committee(
     committee_id: Annotated[int, Path],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> Committee:
     """Возвращает орг-комитет по его идентификатору.
 
     Args:
         committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
-        service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
 
     Returns:
         Committee: Полные данные об орг-комитете.
@@ -112,6 +120,7 @@ async def update_committee(
     committee_id: Annotated[int, Path],
     body: Annotated[UpdateCommitteeBody, Body()],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> Committee:
     """Обновляет данные орг-комитета.
 
@@ -119,6 +128,7 @@ async def update_committee(
         committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
         body (Annotated[UpdateCommitteeBody, Body]): Обновляемые поля.
         committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
 
     Returns:
         Committee: Полные, обновлённые данные орг-комитета.
@@ -135,6 +145,7 @@ async def get_committee_members(
     committee_id: Annotated[int, Path],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
     members_service: Annotated[MembersService, Depends(get_members_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> list[Member]:
     """Возвращает список участников орг-комитета.
 
@@ -142,13 +153,14 @@ async def get_committee_members(
         committee_id (Annotated[int, Path]): Идентификатор орг-комитета.
         committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
         members_service (Annotated[MembersService, Depends]): Сервис участников.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
 
     Returns:
         list[Member]: Участники орг-комитета.
     """
-    await committee_service.get(committee_id)
+    committee = await committee_service.get(committee_id)
 
-    members = await members_service.get_members(union_id=committee_id)
+    members = await members_service.get_members(union_id=committee.id)
 
     return [Member.model_validate(m) for m in members]
 
@@ -159,6 +171,7 @@ async def add_committee_member(
     body: Annotated[AddMemberBody, Body()],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
     members_service: Annotated[MembersService, Depends(get_members_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> Member:
     """Добавляет участника в орг-комитет.
 
@@ -167,13 +180,14 @@ async def add_committee_member(
         body (Annotated[AddMemberBody, Body]): Данные участника.
         committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
         members_service (Annotated[MembersService, Depends]): Сервис участников.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
 
     Returns:
         Member: Созданный участник.
     """
-    await committee_service.get(committee_id)
+    committee = await committee_service.get(committee_id)
 
-    member = await members_service.add_member(union_id=committee_id, callsign=body.callsign)
+    member = await members_service.add_member(union_id=committee.id, callsign=body.callsign)
 
     return Member.model_validate(member)
 
@@ -185,6 +199,7 @@ async def update_committee_member(
     body: Annotated[UpdateMemberBody, Body()],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
     members_service: Annotated[MembersService, Depends(get_members_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> Member:
     """Обновляет данные участника орг-комитета.
 
@@ -194,17 +209,16 @@ async def update_committee_member(
         body (Annotated[UpdateMemberBody, Body]): Обновляемые поля.
         committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
         members_service (Annotated[MembersService, Depends]): Сервис участников.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
 
     Returns:
         Member: Обновлённый участник.
     """
-    await committee_service.get(committee_id)
+    committee = await committee_service.get(committee_id)
 
     changes = body.model_dump(exclude_none=True)
     member = await members_service.update_member(
-        member_id=member_id,
-        union_id=committee_id,
-        **changes,
+        member_id=member_id, union_id=committee.id, **changes
     )
 
     return Member.model_validate(member)
@@ -216,6 +230,7 @@ async def remove_committee_member(
     member_id: Annotated[int, Path],
     committee_service: Annotated[CommitteesService, Depends(get_committees_service)],
     members_service: Annotated[MembersService, Depends(get_members_service)],
+    _session: Annotated[UserSession, COMMON_COMMITTEE_SEC],
 ) -> None:
     """Исключает участника из орг-комитета.
 
@@ -224,7 +239,8 @@ async def remove_committee_member(
         member_id (Annotated[int, Path]): Идентификатор участника.
         committee_service (Annotated[CommitteesService, Depends]): Сервис орг-комитетов.
         members_service (Annotated[MembersService, Depends]): Сервис участников.
+        _session (Annotated[UserSession, Security]): Авторизованная сессия пользователя.
     """
-    await committee_service.get(committee_id)
+    committee = await committee_service.get(committee_id)
 
-    await members_service.remove_member(union_id=committee_id, member_id=member_id)
+    await members_service.remove_member(union_id=committee.id, member_id=member_id)

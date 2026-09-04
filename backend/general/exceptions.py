@@ -12,3 +12,7 @@ class ProviderError(BackendError):
 
 class InternalAPIError(BackendError):
     """Ошибка внутреннего API."""
+
+
+class SecurityError(BackendError):
+    """Ошибка безопасности."""
