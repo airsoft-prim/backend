@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from enum import StrEnum
 import operator
-from typing import Any
+from typing import Any, Self
 
 
 class SortDirection(StrEnum):
@@ -35,11 +35,20 @@ class FilterOperator(StrEnum):
 
 
 class UserRole(StrEnum):
-    """Роль пользователя на портале."""
+    """Роль пользователя на портале.
 
-    PLAYER = "player"
+    Порядок опредления роли в Enum определяет её приоритет: Чем выше в списке,
+    тем выше приоритет роли.
+    """
+
     ADMIN = "admin"
     MODERATOR = "moderator"
+    PLAYER = "player"
+
+    def equal_or_higher(self) -> list[Self]:
+        """Возвращает список ролей, равных или выше текущей."""
+        roles = list(type(self))
+        return roles[: roles.index(self) + 1]
 
 
 class UnionMemberRank(StrEnum):
